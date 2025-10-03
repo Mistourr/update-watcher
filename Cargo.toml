@@ -1,0 +1,8 @@
+[package]
+name = "update-watcher"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ksni = "0.3.1"
+tokio = "1.47.1"
