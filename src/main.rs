@@ -1,9 +1,13 @@
-use ksni::TrayMethods; // provides the spawn method
+use std::fmt::Debug;
+
+use ksni::TrayMethods;
+
+use crate::yay::yay::get_updates;
+mod yay;
 
 #[derive(Debug)]
 struct MyTray {
-    selected_option: usize,
-    checked: bool,
+    updates: Vec<String>
 }
 
 impl ksni::Tray for MyTray {
@@ -14,14 +18,15 @@ impl ksni::Tray for MyTray {
         "system-software-update".into()
     }
     fn title(&self) -> String {
-        if self.checked { "CHECKED!" } else { "MyTray" }.into()
+        "Updates available".into()
     }
     fn tool_tip(&self) -> ksni::ToolTip {
+        let num = self.updates.iter().count();
         ksni::ToolTip {
             icon_name: String::from("system-software-update"),
             icon_pixmap: Vec::new(),
             title: String::from("Updates available"), 
-            description: String::from("2 available") }
+            description: String::from(format!("{num} available")) }
     }
     fn menu(&self) -> Vec<ksni::MenuItem<Self>> {
         use ksni::menu::*;
@@ -56,35 +61,6 @@ impl ksni::Tray for MyTray {
             }
             .into(),
             MenuItem::Separator,
-            RadioGroup {
-                selected: self.selected_option,
-                select: Box::new(|this: &mut Self, current| {
-                    this.selected_option = current;
-                }),
-                options: vec![
-                    RadioItem {
-                        label: "Option 0".into(),
-                        ..Default::default()
-                    },
-                    RadioItem {
-                        label: "Option 1".into(),
-                        ..Default::default()
-                    },
-                    RadioItem {
-                        label: "Option 2".into(),
-                        ..Default::default()
-                    },
-                ],
-                ..Default::default()
-            }
-            .into(),
-            CheckmarkItem {
-                label: "Checkable".into(),
-                checked: self.checked,
-                activate: Box::new(|this: &mut Self| this.checked = !this.checked),
-                ..Default::default()
-            }
-            .into(),
             StandardItem {
                 label: "Exit".into(),
                 icon_name: "application-exit".into(),
@@ -98,15 +74,14 @@ impl ksni::Tray for MyTray {
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
+    //let fetcher;
     let tray = MyTray {
-        selected_option: 0,
-        checked: false,
+        updates: get_updates()
     };
     let handle = tray.spawn().await.unwrap();
 
     tokio::time::sleep(std::time::Duration::from_secs(5)).await;
     // We can modify the tray
-    handle.update(|tray: &mut MyTray| tray.checked = true).await;
     // Run forever
     std::future::pending().await
 }
